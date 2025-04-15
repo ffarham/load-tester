@@ -23,7 +23,7 @@ Total Requests:         100
 Successful requests:    17
 Throttled Requests:     83
 Other Failed Requests:  0
-Request Per Second:     93.577747
+Requests Per Second:     93.577747
 
 Total Time:             0.181667s
 Min Response Time:      0.000359s

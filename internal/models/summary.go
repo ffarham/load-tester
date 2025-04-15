@@ -25,7 +25,7 @@ Total Requests:        	%d
 Successful requests:    %d
 Throttled Requests:     %d
 Other Failed Requests:  %d
-Request Per Second:     %f
+Requests Per Second:     %f
 
 Total Time:             %fs
 Min Response Time:      %fs
