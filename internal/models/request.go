@@ -39,10 +39,12 @@ func (v *Request) Execute(client *http.Client, n int, output chan<- Response) {
 		res, err := client.Do(req)
 		duration := time.Since(start)
 		if err != nil {
-			log.Fatalf(
-				"Error executing request %d by worker %d\n%v",
-				index, v.WorkerId, err.Error(),
-			)
+			// when connection is refused, returning 503 Service Unavailable response
+			output <- Response{
+				StatusCode: 503,
+				Duration:   duration,
+			}
+			continue
 		}
 
 		res.Body.Close()
