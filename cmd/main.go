@@ -20,8 +20,9 @@ const (
 	DEFAULT_REQUIRED = "REQUIRED"
 
 	// HTTP status codes
-	STATUS_CODE_SUCCESS   = 200
-	STATUS_CODE_THROTTLED = 429
+	STATUS_CODE_SUCCESS             = 200
+	STATUS_CODE_THROTTLED           = 429
+	STATUS_CODE_SERVICE_UNAVAILABLE = 503
 )
 
 // example usage:
@@ -111,25 +112,39 @@ func main() {
 
 // summarise collects the responses from the workers and calculates the summary
 func summarise(responses chan models.Response) *models.Summary {
+
 	summary := &models.Summary{
 		MinResponseTime: math.MaxFloat64,
 	}
 
 	for response := range responses {
 		summary.TotalRequests++
+
+		if response.StatusCode == STATUS_CODE_SERVICE_UNAVAILABLE {
+			summary.ConnectionFailures++
+			continue
+		}
+
 		if response.StatusCode == STATUS_CODE_SUCCESS {
 			summary.SuccessfulRequests++
+			summary.TotalTime += response.Duration.Seconds()
+			summary.MinResponseTime = min(summary.MinResponseTime, response.Duration.Seconds())
+			summary.MaxResponseTime = max(summary.MaxResponseTime, response.Duration.Seconds())
 		} else if response.StatusCode == STATUS_CODE_THROTTLED {
 			summary.ThrottledRequests++
 		} else {
-			summary.OtherFailedRequests++
+			summary.FailedRequests++
 		}
-		summary.TotalTime += response.Duration.Seconds()
-		summary.MinResponseTime = min(summary.MinResponseTime, response.Duration.Seconds())
-		summary.MaxResponseTime = max(summary.MaxResponseTime, response.Duration.Seconds())
 	}
-	summary.RequestPerSecond = float64(summary.SuccessfulRequests) / summary.TotalTime
-	summary.AverageResponseTime = summary.TotalTime / float64(summary.TotalRequests)
+	summary.RequestsPerSecond = utils.SafeDiv(float64(summary.SuccessfulRequests), summary.TotalTime)
+	summary.AverageResponseTime = utils.SafeDiv(summary.TotalTime, float64(summary.SuccessfulRequests))
+
+	// edge case: no connection was established
+	if summary.MinResponseTime == math.MaxFloat64 {
+		summary.TotalTime = math.NaN()
+		summary.MinResponseTime = math.NaN()
+		summary.MaxResponseTime = math.NaN()
+	}
 
 	return summary
 }

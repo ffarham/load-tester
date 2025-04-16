@@ -19,14 +19,16 @@ go run cmd/main.go -m=POST -url=http://localhost:8080/ -w=10 -r=100 -t=10 -f=inp
 ### Example Output
 ```
         ---Load Test Results---
-Total Requests:         100
-Successful requests:    17
-Throttled Requests:     83
-Other Failed Requests:  0
-Requests Per Second:     93.577747
+Total Requests:         1000
+Successful requests:    170
+Failed Requests:        0
+Throttled Requests:     830
+Refused Connections:    0
 
-Total Time:             0.181667s
-Min Response Time:      0.000359s
-Average Response Time:  0.001817s
-Max Response Time:      0.011258s
+[Successful Requests]
+Total Time:             1.641219s
+Min Response Time:      0.000938s
+Average Response Time:  0.009654s
+Max Response Time:      0.015749s
+Requests Per Second:    103.581532
 ```
