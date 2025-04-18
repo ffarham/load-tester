@@ -45,8 +45,6 @@ func main() {
 	filename := flag.String("f", "", "Filename to load payload from")
 	flag.Parse()
 
-	var payload interface{}
-
 	// validate the command line arguments
 	if len(*method) == 0 {
 		log.Fatal("HTTP method is required")
@@ -54,14 +52,9 @@ func main() {
 	if len(*url) == 0 {
 		log.Fatal("URL is required")
 	}
-	if *method == "POST" && len(*filename) > 0 {
-		jsonData, err := utils.ReadJsonFile(*filename)
-		if err != nil {
-			log.Fatalf("Error loading payload from file %s\n%v", *filename, err)
-		}
-		payload = jsonData
-		log.Printf("Loaded payload from file %s", *filename)
-	}
+
+	// get payload from file
+	payload := getPayload(*method, *url, *filename)
 
 	log.Printf(
 		"Starting load tester with %d workers makings %d %s requests to %s",
@@ -108,6 +101,20 @@ func main() {
 
 	summary := summarise(responses)
 	log.Printf("%s", summary)
+}
+
+// getPayload loads the payload from a file if the method is POST and filename is provided
+func getPayload(method, url, filename string) (payload interface{}) {
+	if method == "POST" && len(filename) > 0 {
+		jsonData, err := utils.ReadJsonFile(filename)
+		if err != nil {
+			log.Fatalf("Error loading payload from file %s\n%v", filename, err)
+		}
+		payload = jsonData
+		log.Printf("Loaded payload from file %s", filename)
+	}
+
+	return
 }
 
 // summarise collects the responses from the workers and calculates the summary
