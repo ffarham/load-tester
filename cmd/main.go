@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
 	"math"
@@ -45,16 +46,12 @@ func main() {
 	filename := flag.String("f", "", "Filename to load payload from")
 	flag.Parse()
 
-	// validate the command line arguments
-	if len(*method) == 0 {
-		log.Fatal("HTTP method is required")
-	}
-	if len(*url) == 0 {
-		log.Fatal("URL is required")
+	err := validateCmdLineInput(*method, *url, *workers, *requests, *timeout)
+	if err != nil {
+		log.Fatalf("Error validating command line inputs.\n%v", err)
 	}
 
-	// get payload from file
-	payload := getPayload(*method, *url, *filename)
+	payload := getPayload(*method, *filename)
 
 	log.Printf(
 		"Starting load tester with %d workers makings %d %s requests to %s",
@@ -103,8 +100,28 @@ func main() {
 	log.Printf("%s", summary)
 }
 
+// validateInput checks if the provided command line arguments are valid
+func validateCmdLineInput(method, url string, workers, requests, timeout int) error {
+	if len(method) == 0 {
+		return errors.New("HTTP method is required")
+	}
+	if len(url) == 0 {
+		return errors.New("URL is required")
+	}
+	if workers <= 0 {
+		return errors.New("number of workers must be at least 1")
+	}
+	if requests <= 0 {
+		return errors.New("number of requests must be at least 1")
+	}
+	if timeout <= 0 {
+		return errors.New("timeout must be at least 1 second")
+	}
+	return nil
+}
+
 // getPayload loads the payload from a file if the method is POST and filename is provided
-func getPayload(method, url, filename string) (payload interface{}) {
+func getPayload(method, filename string) (payload interface{}) {
 	if method == "POST" && len(filename) > 0 {
 		jsonData, err := utils.ReadJsonFile(filename)
 		if err != nil {
