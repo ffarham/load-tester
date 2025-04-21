@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"flag"
 	"log"
@@ -42,6 +43,7 @@ func main() {
 	url := flag.String("url", DEFAULT_REQUIRED, "URL to load test")
 	workers := flag.Int("w", DEFAULT_WORKERS, "Number of concurrent workers")
 	requests := flag.Int("r", DEFAULT_REQUESTS, "Total number of requests to send")
+	insecure := flag.Bool("i", false, "Skip TLS verification")
 	timeout := flag.Int("t", DEFAULT_TIMEOUT, "Timeout in seconds")
 	filename := flag.String("f", "", "Filename to load payload from")
 	flag.Parse()
@@ -58,8 +60,19 @@ func main() {
 		*workers, *requests, *method, *url,
 	)
 
+	// http.Transport object that skips TLS certificate verification if insecure flag is set
+	var transport http.Transport
+	if *insecure {
+		transport = http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+
 	client := &http.Client{
-		Timeout: time.Duration(*timeout) * time.Second,
+		Transport: &transport,
+		Timeout:   time.Duration(*timeout) * time.Second,
 	}
 
 	// create a buffered channel to hold the responses
