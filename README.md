@@ -14,6 +14,7 @@ go run cmd/main.go -m=POST -url=http://localhost:8080/ -w=10 -r=100 -t=10 -f=inp
 - `r`: flag for specifying the total number of requests to send. Default is 1.
 - `t`: flag for specifying the HTTP request timeout in seconds. Default is 3.
 - `f`: flag for specifying the filename to load the json payload from. Payload is empty for post reqests when this flag is not provided, as well as for other requests. Default is "".
+- `i`: flag for specifying HTTPS requests as insecure. Default is false.
 
 
 ### Example Output
