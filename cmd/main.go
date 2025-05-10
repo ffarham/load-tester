@@ -20,11 +20,6 @@ const (
 	DEFAULT_REQUESTS = 1
 	DEFAULT_TIMEOUT  = 3
 	DEFAULT_REQUIRED = "REQUIRED"
-
-	// HTTP status codes
-	STATUS_CODE_SUCCESS             = 200
-	STATUS_CODE_THROTTLED           = 429
-	STATUS_CODE_SERVICE_UNAVAILABLE = 503
 )
 
 // example usage:
@@ -35,6 +30,7 @@ const (
 // `r`: flag for specifying the total number of requests to send. Default is 1.
 // `t`: flag for specifying the HTTP request timeout in seconds. Default is 3.
 // `f`: flag for specifying the filename to load the json payload from.
+// `i`: flag for specifying whether to make an insecure request. Default is false.s
 // Payload is `nil` for post reqests when this flag is not provided, as well as
 // for other requests. Default is "".
 func main() {
@@ -157,17 +153,17 @@ func summarise(responses chan models.Response) *models.Summary {
 	for response := range responses {
 		summary.TotalRequests++
 
-		if response.StatusCode == STATUS_CODE_SERVICE_UNAVAILABLE {
+		if response.StatusCode == http.StatusServiceUnavailable {
 			summary.ConnectionFailures++
 			continue
 		}
 
-		if response.StatusCode == STATUS_CODE_SUCCESS {
+		if response.StatusCode == http.StatusOK {
 			summary.SuccessfulRequests++
 			summary.TotalTime += response.Duration.Seconds()
 			summary.MinResponseTime = min(summary.MinResponseTime, response.Duration.Seconds())
 			summary.MaxResponseTime = max(summary.MaxResponseTime, response.Duration.Seconds())
-		} else if response.StatusCode == STATUS_CODE_THROTTLED {
+		} else if response.StatusCode == http.StatusTooManyRequests {
 			summary.ThrottledRequests++
 		} else {
 			summary.FailedRequests++
