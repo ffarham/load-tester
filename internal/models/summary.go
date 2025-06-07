@@ -5,7 +5,6 @@ import (
 	"math"
 )
 
-// Summary is the summary of the load test results.
 type Summary struct {
 	TotalRequests               int
 	SuccessfulRequests          int
@@ -20,7 +19,6 @@ type Summary struct {
 	MaxResponseTime             float64
 }
 
-// String implements the fmt.Stringer interface for the Summary struct.
 func (v *Summary) String() string {
 	return fmt.Sprintf(`
 	
@@ -49,7 +47,6 @@ Requests Per Second:    %s
 	)
 }
 
-// getTimeValue returns the time value as a string. If the value is NaN, it returns "-".
 func getTimeValue(value float64) string {
 	if math.IsNaN(value) {
 		return "-"
@@ -57,7 +54,6 @@ func getTimeValue(value float64) string {
 	return fmt.Sprintf("%f", value)
 }
 
-// getTimeUnit returns the time unit for the given value. If it is NaN, it returns "".
 func getTimeUnit(value float64) string {
 	if math.IsNaN(value) {
 		return ""

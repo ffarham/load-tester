@@ -1,6 +1,7 @@
 package models
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"log"
@@ -8,15 +9,14 @@ import (
 	"time"
 )
 
-// Request is the http request to be executed by a worker thread.
 type Request struct {
-	Url      string
-	Method   string
-	Payload  interface{}
-	WorkerId int
+	Url           string
+	Method        string
+	Payload       interface{}
+	WorkerId      int
+	IsEventSource bool
 }
 
-// Execute executes the http request and sends the response to the output channel.
 func (v *Request) Execute(client *http.Client, n int, output chan<- Response) {
 	for index := range n {
 		body, err := json.Marshal(v.Payload)
@@ -34,6 +34,9 @@ func (v *Request) Execute(client *http.Client, n int, output chan<- Response) {
 				index, v.WorkerId, err.Error(),
 			)
 		}
+		if v.Method == http.MethodGet && v.IsEventSource {
+			setEventSourceHeaders(req)
+		}
 
 		start := time.Now()
 		res, err := client.Do(req)
@@ -47,11 +50,34 @@ func (v *Request) Execute(client *http.Client, n int, output chan<- Response) {
 			continue
 		}
 
-		res.Body.Close()
+		defer res.Body.Close()
+
+		if v.Method == http.MethodGet && v.IsEventSource {
+			handleEventSourceResponse(res, output)
+			continue
+		}
 
 		output <- Response{
 			StatusCode: res.StatusCode,
 			Duration:   duration,
 		}
 	}
+}
+
+func handleEventSourceResponse(res *http.Response, output chan<- Response) {
+	sseStreamStartTime := time.Now()
+	scanner := bufio.NewScanner(res.Body)
+	for scanner.Scan() {
+		scanner.Text()
+	}
+	output <- Response{
+		StatusCode: res.StatusCode,
+		Duration:   time.Since(sseStreamStartTime),
+	}
+}
+
+func setEventSourceHeaders(req *http.Request) {
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Connection", "keep-alive")
 }

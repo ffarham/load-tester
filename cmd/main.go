@@ -15,11 +15,10 @@ import (
 )
 
 const (
-	// Default parameters
-	DEFAULT_WORKERS  = 1
-	DEFAULT_REQUESTS = 1
-	DEFAULT_TIMEOUT  = 3
-	DEFAULT_REQUIRED = "REQUIRED"
+	defaultWorkers  = 1
+	defaultRequests = 1
+	defaultTimeout  = 3
+	defaultRequired = "REQUIRED"
 )
 
 // example usage:
@@ -31,16 +30,18 @@ const (
 // `t`: flag for specifying the HTTP request timeout in seconds. Default is 3.
 // `f`: flag for specifying the filename to load the json payload from.
 // `i`: flag for specifying whether to make an insecure request. Default is false.s
+// `sse`: flag to specify whether the request is a SSE request.
 // Payload is `nil` for post reqests when this flag is not provided, as well as
 // for other requests. Default is "".
 func main() {
 
-	method := flag.String("m", DEFAULT_REQUIRED, "HTTP method to use")
-	url := flag.String("url", DEFAULT_REQUIRED, "URL to load test")
-	workers := flag.Int("w", DEFAULT_WORKERS, "Number of concurrent workers")
-	requests := flag.Int("r", DEFAULT_REQUESTS, "Total number of requests to send")
+	method := flag.String("m", defaultRequired, "HTTP method to use")
+	url := flag.String("url", defaultRequired, "URL to load test")
+	workers := flag.Int("w", defaultWorkers, "Number of concurrent workers")
+	requests := flag.Int("r", defaultRequests, "Total number of requests to send")
 	insecure := flag.Bool("i", false, "Skip TLS verification")
-	timeout := flag.Int("t", DEFAULT_TIMEOUT, "Timeout in seconds")
+	sse := flag.Bool("sse", false, "Indicates if the request is for Server-Sent Events (text/event-stream)")
+	timeout := flag.Int("t", defaultTimeout, "Timeout in seconds")
 	filename := flag.String("f", "", "Filename to load payload from")
 	flag.Parse()
 
@@ -66,9 +67,16 @@ func main() {
 		}
 	}
 
-	client := &http.Client{
-		Transport: &transport,
-		Timeout:   time.Duration(*timeout) * time.Second,
+	var client *http.Client
+	if *sse {
+		client = &http.Client{
+			Transport: &transport,
+		}
+	} else {
+		client = &http.Client{
+			Transport: &transport,
+			Timeout:   time.Duration(*timeout) * time.Second,
+		}
 	}
 
 	// create a buffered channel to hold the responses
@@ -90,10 +98,11 @@ func main() {
 		go func() {
 			defer wg.Done()
 			request := &models.Request{
-				Url:      *url,
-				Method:   *method,
-				Payload:  payload,
-				WorkerId: i,
+				Url:           *url,
+				Method:        *method,
+				Payload:       payload,
+				WorkerId:      i,
+				IsEventSource: *sse,
 			}
 			request.Execute(client, workerRequests, responses)
 		}()
@@ -109,7 +118,6 @@ func main() {
 	log.Printf("%s", summary)
 }
 
-// validateInput checks if the provided command line arguments are valid
 func validateCmdLineInput(method, url string, workers, requests, timeout int) error {
 	if len(method) == 0 {
 		return errors.New("HTTP method is required")
@@ -129,7 +137,6 @@ func validateCmdLineInput(method, url string, workers, requests, timeout int) er
 	return nil
 }
 
-// getPayload loads the payload from a file if the method is POST and filename is provided
 func getPayload(method, filename string) (payload interface{}) {
 	if method == "POST" && len(filename) > 0 {
 		jsonData, err := utils.ReadJsonFile(filename)
@@ -143,7 +150,6 @@ func getPayload(method, filename string) (payload interface{}) {
 	return
 }
 
-// summarise collects the responses from the workers and calculates the summary
 func summarise(responses chan models.Response) *models.Summary {
 
 	summary := &models.Summary{

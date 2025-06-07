@@ -6,7 +6,6 @@ import (
 	"os"
 )
 
-// ReadJsonFile reads a JSON file and returns the contents as a map.
 func ReadJsonFile(filename string) (interface{}, error) {
 
 	contents, err := os.ReadFile(filename)
@@ -23,7 +22,6 @@ func ReadJsonFile(filename string) (interface{}, error) {
 	return jsonData, nil
 }
 
-// SafeDiv returns NaN when dividing by zero, instead of an infinity value.
 func SafeDiv(a, b float64) float64 {
 	if b == 0 {
 		return math.NaN()
